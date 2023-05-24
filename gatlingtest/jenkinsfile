@@ -1,0 +1,41 @@
+node {
+    properties([
+        disableConcurrentBuilds(),
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '25', numToKeepStr: '25'))
+    ])
+    
+    stage('clone git repo'){
+        git branch: 'main', url: 'https://github.com/alena-taranava/ptesting_course.git'
+    }
+
+    stage("configure") {
+        sh "mkdir $WORKSPACE/$BUILD_NUMBER/"
+        sh "cd gatlingtest && mvn -B clean package"
+        buildSucceeded = true 
+    }
+
+    stage('run Gatling test') {
+        try{
+            sh "cd gatlingtest && mvn gatling:test -DrampUsers=100 -Dtime=60"
+        } catch (err) {
+            echo "Failed: ${err}"
+            buildSucceeded = false
+        }
+    }
+
+    stage('publish results'){
+        always {
+            gatlingArchive()
+        }
+        sh "mv /Users/Alena_Taranava/.jenkins/workspace/Tests/Gatling/gatlingtest/target/* $WORKSPACE/$BUILD_NUMBER/"
+        archiveArtifacts artifacts: "$BUILD_NUMBER/gatling/**"
+    } 
+    
+    stage('verify the run') {
+        if (!buildSucceeded){
+            error("Run failed...")
+        } else{
+            echo 'Succeeded!'
+        }
+    }
+}

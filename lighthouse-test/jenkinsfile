@@ -1,0 +1,48 @@
+node {
+    properties([
+        disableConcurrentBuilds(),
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '25', numToKeepStr: '25'))
+    ])
+    
+    stage('clone git repo'){
+        git branch: 'main', url: 'https://github.com/alena-taranava/ptesting_course.git'
+    }
+
+    stage("configure") {
+        sh "mkdir $WORKSPACE/$BUILD_NUMBER/"
+        buildSucceeded = true 
+    }
+
+    stage('run test'){
+        try{
+            sh "lighthouse http://localhost --chrome-flags=\"--headless\""
+        } catch (err) {
+            echo "Failed: ${err}"
+            buildSucceeded = false
+        }
+    }
+
+    stage('publish results'){
+        sh "mv /Users/Alena_Taranava/.jenkins/workspace/Tests/Lightouse/*.html $WORKSPACE/$BUILD_NUMBER/"
+        archiveArtifacts allowEmptyArchive: true, artifacts: "$BUILD_NUMBER/**", onlyIfSuccessful: false
+    }
+    
+    stage('publish HTML Report') {
+    publishHTML([
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: "${BUILD_NUMBER}",
+        reportFiles: "*.html",
+        reportName: "HTML Report",
+        reportTitles: ""])
+    }
+ 
+    stage('verify the run') {
+        if (!buildSucceeded){
+            error("Run failed...")
+        } else{
+            echo 'Succeeded!'
+        }
+    }
+}

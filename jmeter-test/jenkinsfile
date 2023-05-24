@@ -1,0 +1,49 @@
+node {
+    properties([
+        disableConcurrentBuilds(),
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '25', numToKeepStr: '25'))
+    ])
+    
+    stage('clone git repo'){
+        git branch: 'main', url: 'https://github.com/alena-taranava/ptesting_course.git'
+    }
+
+    stage("configure") {
+        sh "mkdir $WORKSPACE/$BUILD_NUMBER/"
+        buildSucceeded = true 
+    }
+
+    stage('run test'){
+        try{
+            sh "rm -rf /tmp/reports && mkdir /tmp/reports && mkdir -p /tmp/reports/JMeterResults/HtmlReport"
+            sh "jmeter -n -t jmeter-test/addToCartAndProceed.jmx -l /tmp/reports/JMeterResults/jmeter.jtl -e -o /tmp/reports/JMeterResults/HtmlReport -Jthreads=5 -Jiterations=5"
+        } catch (err) {
+            echo "Failed: ${err}"
+            buildSucceeded = false
+        }
+    }
+
+    stage('publish results'){
+        sh "mv /tmp/reports/* $WORKSPACE/$BUILD_NUMBER/"
+        archiveArtifacts artifacts: "$BUILD_NUMBER/JMeterResults/**"
+    } 
+    
+    stage('publish HTML Report') {
+    publishHTML([
+        allowMissing: true,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: "${BUILD_NUMBER}/JMeterResults/HtmlReport",
+        reportFiles: "index.html",
+        reportName: "HTML Report",
+        reportTitles: ""])
+    }
+    
+    stage('verify the run') {
+        if (!buildSucceeded){
+            error("Run failed...")
+        } else{
+            echo 'Succeeded!'
+        }
+    }
+}
