@@ -8,8 +8,8 @@ import io.gatling.core.filter
 
 object BaseHelpers {
   
-    val baseUrl = "http://shopizer:8080/"
-    val apiUrl = "http://shopizer:8080/api/v1/"
+    val baseUrl = "http://localhost:8080/"
+    val apiUrl = "http://localhost:8080/api/v1/"
 
     val defaultStore = "DEFAULT"
     val tableCategory = 50

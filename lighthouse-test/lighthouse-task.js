@@ -42,7 +42,7 @@ async function captureReport() {
     });
 
 	const page = await browser.newPage();
-	const baseURL = "http://shopizer:8080/";
+	const baseURL = "http://localhost:8080/";
 	
 	await page.setViewport({"width":1920,"height":1080});
 	await page.setDefaultTimeout(30000);
